@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Gimnasio Alto Rendimiento</title>
+  <style>
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+    h1 {
+      color: #1a3c34;
+      text-align: center;
+    }
+    #athletes-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .athlete-card {
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      transition: all 0.25s ease;
+    }
+    .athlete-card.inactive {
+      opacity: 0.65;
+      border-left: 5px solid #e74c3c;
+    }
+    .athlete-card.active {
+      border-left: 5px solid #27ae60;
+    }
+    .athlete-card.elite {
+      background: linear-gradient(135deg, #f6f8fc, #e8f0fe);
+      box-shadow: 0 6px 15px rgba(39,174,96,0.18);
+    }
+    .name {
+      font-size: 1.3rem;
+      margin: 0 0 10px 0;
+      color: #2c3e50;
+    }
+    .status, .points, .level {
+      margin: 6px 0;
+      color: #555;
+    }
+    .status::before {
+      content: "Estado: ";
+      font-weight: bold;
+    }
+    .level {
+      font-weight: bold;
+      color: #e67e22;
+    }
+    button {
+      margin-top: 12px;
+      padding: 10px 16px;
+      background: #3498db;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background: #2980b9;
+    }
+    button:disabled {
+      background: #95a5a6;
+      cursor: not-allowed;
+    }
+    .checkmark {
+      display: none;
+      color: #27ae60;
+      font-size: 1.4rem;
+      margin-left: 10px;
+    }
+    .active .checkmark {
+      display: inline;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Dashboard - Atletas Alto Rendimiento</h1>
+
+  <div id="athletes-container">
+    <!-- Las tarjetas se crearán aquí -->
+  </div>
+
+<script>
+
+// Simula la llamada a la API / sensor
+function getAthletes() {
+  return new Promise((resolve) => {      // inicio promesa
+    setTimeout(() => {
+      const athletes = [
+        { id: 1, user: "jUAn pErez",     status: "inactive", points: 45 },
+        { id: 2, user: "mArIa gArCiA",   status: "active",   points: 88 },
+        { id: 3, user: "cArLoS rOdrIguEz", status: "inactive", points: 12 },
+        { id: 4, user: "lUciA fErNAnDeZ",  status: "active",   points: 95 },
+        { id: 5, user: "pAbLo mArTiN",     status: "inactive", points: 30 }
+      ];
+      resolve(athletes);     //se resuelve
+    }, 1200);                //demora de 1.2 segundos
+  });
+}
+
+
+async function loadDashboard() {
+  const container = document.getElementById("athletes-container");
+  container.innerHTML = "<p>Cargando atletas...</p>";
+
+  try {
+    const athletes = await getAthletes();
+
+    // Limpiamos el contenedor
+    container.innerHTML = "";
+
+    // Procesamos y creamos las tarjetas
+    const processedAthletes = athletes.map(athlete => {
+      const nameUpper = athlete.user.toUpperCase();
+      
+      let level = "Amateur";
+      if (athlete.points > 50) {
+        level = "Elite";
+      }
+
+      return {
+        ...athlete,
+        user: nameUpper,
+        level
+      };
+    });
+
+    //tarjetas al DOM
+    processedAthletes.forEach(athlete => {
+      const card = document.createElement("div");
+      card.className = "athlete-card " + athlete.status + " " + athlete.level.toLowerCase();
+      card.dataset.id = athlete.id; // para identificarla después
+
+card.innerHTML = 
+        '<h3 class="name">' + athlete.user + '</h3>' +
+        '<p class="status">' + athlete.status + '</p>' +
+        '<p class="points">Puntos: ' + athlete.points + '</p>' +
+        '<p class="level">Nivel: ' + athlete.level + '</p>' +
+        '<button data-id="' + athlete.id + '" class="buy-btn">' +
+          'Comprar <span class="checkmark">✔</span>' +
+        '</button>';
+;
+
+      container.appendChild(card);
+    });
+
+    // Listener de botones (delegación de eventos)
+container.addEventListener("click", (e) => {
+  const btn = e.target.closest("button.buy-btn");
+  if (!btn) return;
+
+  const id = Number(btn.dataset.id);
+  const card = btn.closest(".athlete-card");
+
+  // Buscamos el atleta en el arreglo procesado
+  const athlete = processedAthletes.find(a => a.id === id);
+  if (!athlete) return;
+
+  // Solo permitimos "comprar" si está inactivo
+  if (athlete.status === "inactive") {
+    athlete.status = "active";
+
+    // Actualizamos la vista
+    card.classList.remove("inactive");
+    card.classList.add("active");
+    card.querySelector(".status").textContent = "Estado: active";
+
+    // Cambiamos el botón
+    btn.disabled = true;
+    btn.innerHTML = "Comprado <span class='checkmark'>✔</span>";
+    btn.style.background = "#27ae60";           // verde de éxito
+    btn.style.cursor = "default";
+  }
+});
+
+  } catch (error) {
+    console.error("Error al cargar los atletas:", error);
+    container.innerHTML = "<p style='color:red; text-align:center'>Error al cargar los datos del sensor</p>";
+  }
+}
+
+// Iniciamos la carga
+loadDashboard();
+
+</script>
+</body>
+</html>
